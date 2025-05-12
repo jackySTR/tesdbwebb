@@ -79,6 +79,7 @@
 </head>
 <body>
   <canvas id="bgCanvas"></canvas>
+  <audio id="bgMusic" src="https://files.catbox.moe/pfbmtg.mp3" preload="auto"></audio>
   <div class="centered">
     <div class="card">
       <h2>Database</h2>
@@ -116,15 +117,22 @@
     let nomorList = [];
 
     function checkLogin() {
-      const pass = document.getElementById("password").value;
-      if (pass === VALID_PASSWORD) {
-        document.getElementById("loginForm").style.display = "none";
-        document.getElementById("mainForm").style.display = "block";
-        loadPhoneList();
-      } else {
-        document.getElementById("loginStatus").innerText = "❌ Password salah";
-      }
-    }
+  const pass = document.getElementById("password").value;
+  if (pass === VALID_PASSWORD) {
+    document.getElementById("loginForm").style.display = "none";
+    document.getElementById("mainForm").style.display = "block";
+    loadPhoneList();
+
+    // Play music
+    const audio = document.getElementById("bgMusic");
+    audio.volume = 0.5;
+    audio.play().catch(err => {
+      console.log("Autoplay gagal: ", err.message);
+    });
+  } else {
+    document.getElementById("loginStatus").innerText = "❌ Password salah";
+  }
+}
 
     async function loadPhoneList() {
       try {
