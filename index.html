@@ -3,78 +3,97 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login Database</title>
+  <title>Simplebot Database</title>
   <style>
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: #f4f4f4;
+      background: linear-gradient(to bottom, #f8f8ff, #eaeaff);
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
+      padding: 1rem;
     }
     .card {
       background: white;
       padding: 2rem;
-      border-radius: 1rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 500px;
+    }
+    h2 {
+      color: #6b46c1;
       text-align: center;
-      width: 90%;
-      max-width: 400px;
+      margin-bottom: 1rem;
     }
     input, button {
       width: 100%;
       padding: 0.75rem;
-      margin-top: 1rem;
+      margin-top: 0.75rem;
       border: 1px solid #ccc;
       border-radius: 8px;
       font-size: 1rem;
     }
     button {
-      background: #5b3cc4;
+      background: #6b46c1;
       color: white;
       font-weight: bold;
       border: none;
     }
-    #mainForm { display: none; margin-top: 2rem; }
-    ul#phoneList {
-      list-style: none;
-      padding: 0;
-      margin-top: 1rem;
+    #mainForm { display: none; }
+    table {
+      width: 100%;
+      margin-top: 1.5rem;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 0.6rem;
+      border-bottom: 1px solid #eee;
       text-align: left;
     }
-    ul#phoneList li {
-      background: #f1f1f1;
-      margin-bottom: 0.5rem;
-      padding: 0.5rem;
-      border-radius: 6px;
+    #statusMsg {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: red;
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <h2 style="color: #5b3cc4;">Login Database</h2>
+    <h2>Simplebot Database</h2>
+
+    <!-- Login -->
     <div id="loginForm">
       <input type="password" id="password" placeholder="Masukkan password" />
       <button onclick="checkLogin()">Login</button>
       <p id="loginStatus" style="color:red;"></p>
     </div>
 
+    <!-- Main -->
     <div id="mainForm">
-      <input type="text" id="phoneNumber" placeholder="Masukkan nomor telepon" />
+      <input type="text" id="phoneNumber" placeholder="Masukkan nomor">
       <button onclick="addPhone()">Tambah Nomor</button>
+      <input type="search" id="searchBox" placeholder="Cari nomor...">
+      <table>
+        <thead>
+          <tr><th>Nomor</th></tr>
+        </thead>
+        <tbody id="phoneTable"></tbody>
+      </table>
       <p id="statusMsg"></p>
-      <ul id="phoneList"></ul>
     </div>
   </div>
 
   <script>
-    const GITHUB_TOKEN = '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'; // Ganti dengan token pribadi yang aman
+    const GITHUB_TOKEN = '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';
     const REPO_OWNER = 'JackySTR';
-    const REPO_NAME = 'Database';
-    const FILE_PATH = 'dtbs.json';
-    const VALID_PASSWORD = '12345';
+    const REPO_NAME = 'tesdbweb';
+    const FILE_PATH = 'dtbsjuki.json';
+    const VALID_PASSWORD = 'jeki';
+
+    let nomorList = [];
 
     function checkLogin() {
       const pass = document.getElementById("password").value;
@@ -88,45 +107,37 @@
     }
 
     async function loadPhoneList() {
-      const phoneListEl = document.getElementById("phoneList");
-      phoneListEl.innerHTML = "<li>Memuat daftar...</li>";
-
       try {
         const res = await fetch(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FILE_PATH}`);
-        const json = await res.json();
-
-        if (!json.data || !Array.isArray(json.data)) {
-          phoneListEl.innerHTML = "<li>❌ Struktur data rusak</li>";
-          return;
-        }
-
-        if (json.data.length === 0) {
-          phoneListEl.innerHTML = "<li>Tidak ada nomor tersimpan.</li>";
-          return;
-        }
-
-        phoneListEl.innerHTML = json.data.map(num => `<li>${num}</li>`).join("");
+        const data = await res.json();
+        nomorList = data.data || [];
+        renderTable(nomorList);
       } catch (e) {
-        phoneListEl.innerHTML = `<li>❌ Gagal memuat: ${e.message}</li>`;
+        document.getElementById('statusMsg').innerText = '❌ Gagal memuat data: ' + e.message;
       }
     }
 
-    async function addPhone() {
-      const phone = document.getElementById("phoneNumber").value.trim();
-      const statusMsg = document.getElementById("statusMsg");
+    function renderTable(list) {
+      const tbody = document.getElementById('phoneTable');
+      tbody.innerHTML = list.map(n => `<tr><td>${n}</td></tr>`).join('');
+    }
 
-      if (!phone) return statusMsg.innerText = "❌ Nomor kosong";
+    async function addPhone() {
+      const input = document.getElementById("phoneNumber");
+      const phone = input.value.trim();
+      const statusMsg = document.getElementById("statusMsg");
+      statusMsg.style.color = 'red';
+
+      if (!phone) return statusMsg.innerText = "❌ Nomor tidak boleh kosong";
+
+      if (nomorList.includes(phone)) {
+        statusMsg.innerText = "❌ Nomor sudah ada";
+        return;
+      }
 
       try {
-        const res = await fetch(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FILE_PATH}`);
-        const json = await res.json();
-
-        if (!json.data || !Array.isArray(json.data)) return statusMsg.innerText = "❌ Struktur data rusak";
-
-        if (json.data.includes(phone)) return statusMsg.innerText = "❌ Nomor sudah ada";
-
-        json.data.push(phone);
-        const updated = JSON.stringify(json, null, 2);
+        nomorList.push(phone);
+        const updated = JSON.stringify({ data: nomorList }, null, 2);
         const base64 = btoa(unescape(encodeURIComponent(updated)));
 
         const shaRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
@@ -148,18 +159,25 @@
         });
 
         if (upload.ok) {
+          statusMsg.style.color = "green";
           statusMsg.innerText = "✅ Nomor berhasil ditambahkan";
-          document.getElementById("phoneNumber").value = "";
-          loadPhoneList();
+          input.value = "";
+          renderTable(nomorList);
         } else {
           const err = await upload.json();
-          statusMsg.innerText = "❌ Gagal: " + err.message;
+          statusMsg.innerText = "❌ Gagal upload: " + err.message;
         }
 
       } catch (e) {
-        statusMsg.innerText = "❌ Error: " + e.message;
+        statusMsg.innerText = "❌ Gagal: " + e.message;
       }
     }
+
+    document.getElementById("searchBox").addEventListener("input", function () {
+      const keyword = this.value.trim().toLowerCase();
+      const filtered = nomorList.filter(n => n.includes(keyword));
+      renderTable(filtered);
+    });
   </script>
 </body>
 </html>
