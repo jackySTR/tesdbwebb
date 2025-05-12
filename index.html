@@ -38,6 +38,18 @@
       border: none;
     }
     #mainForm { display: none; margin-top: 2rem; }
+    ul#phoneList {
+      list-style: none;
+      padding: 0;
+      margin-top: 1rem;
+      text-align: left;
+    }
+    ul#phoneList li {
+      background: #f1f1f1;
+      margin-bottom: 0.5rem;
+      padding: 0.5rem;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
@@ -53,23 +65,49 @@
       <input type="text" id="phoneNumber" placeholder="Masukkan nomor telepon" />
       <button onclick="addPhone()">Tambah Nomor</button>
       <p id="statusMsg"></p>
+      <ul id="phoneList"></ul>
     </div>
   </div>
 
   <script>
-    const GITHUB_TOKEN = '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';
+    const GITHUB_TOKEN = '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'; // Ganti dengan token pribadi yang aman
     const REPO_OWNER = 'JackySTR';
-    const REPO_NAME = 'tesdbweb';
-    const FILE_PATH = 'dtbsjuki.json';
-    const VALID_PASSWORD = 'jeki'; // Ganti sesuai kebutuhan
+    const REPO_NAME = 'Database';
+    const FILE_PATH = 'dtbs.json';
+    const VALID_PASSWORD = '12345';
 
     function checkLogin() {
       const pass = document.getElementById("password").value;
       if (pass === VALID_PASSWORD) {
         document.getElementById("loginForm").style.display = "none";
         document.getElementById("mainForm").style.display = "block";
+        loadPhoneList();
       } else {
         document.getElementById("loginStatus").innerText = "❌ Password salah";
+      }
+    }
+
+    async function loadPhoneList() {
+      const phoneListEl = document.getElementById("phoneList");
+      phoneListEl.innerHTML = "<li>Memuat daftar...</li>";
+
+      try {
+        const res = await fetch(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FILE_PATH}`);
+        const json = await res.json();
+
+        if (!json.data || !Array.isArray(json.data)) {
+          phoneListEl.innerHTML = "<li>❌ Struktur data rusak</li>";
+          return;
+        }
+
+        if (json.data.length === 0) {
+          phoneListEl.innerHTML = "<li>Tidak ada nomor tersimpan.</li>";
+          return;
+        }
+
+        phoneListEl.innerHTML = json.data.map(num => `<li>${num}</li>`).join("");
+      } catch (e) {
+        phoneListEl.innerHTML = `<li>❌ Gagal memuat: ${e.message}</li>`;
       }
     }
 
@@ -111,6 +149,8 @@
 
         if (upload.ok) {
           statusMsg.innerText = "✅ Nomor berhasil ditambahkan";
+          document.getElementById("phoneNumber").value = "";
+          loadPhoneList();
         } else {
           const err = await upload.json();
           statusMsg.innerText = "❌ Gagal: " + err.message;
