@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login Database</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .card {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+    }
+    input, button {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    button {
+      background: #5b3cc4;
+      color: white;
+      font-weight: bold;
+      border: none;
+    }
+    #mainForm { display: none; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 style="color: #5b3cc4;">Login Database</h2>
+    <div id="loginForm">
+      <input type="password" id="password" placeholder="Masukkan password" />
+      <button onclick="checkLogin()">Login</button>
+      <p id="loginStatus" style="color:red;"></p>
+    </div>
+
+    <div id="mainForm">
+      <input type="text" id="phoneNumber" placeholder="Masukkan nomor telepon" />
+      <button onclick="addPhone()">Tambah Nomor</button>
+      <p id="statusMsg"></p>
+    </div>
+  </div>
+
+  <script>
+    const GITHUB_TOKEN = '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';
+    const REPO_OWNER = 'JackySTR';
+    const REPO_NAME = 'tesdbweb';
+    const FILE_PATH = 'dtbsjuki.json';
+    const VALID_PASSWORD = 'jeki'; // Ganti sesuai kebutuhan
+
+    function checkLogin() {
+      const pass = document.getElementById("password").value;
+      if (pass === VALID_PASSWORD) {
+        document.getElementById("loginForm").style.display = "none";
+        document.getElementById("mainForm").style.display = "block";
+      } else {
+        document.getElementById("loginStatus").innerText = "❌ Password salah";
+      }
+    }
+
+    async function addPhone() {
+      const phone = document.getElementById("phoneNumber").value.trim();
+      const statusMsg = document.getElementById("statusMsg");
+
+      if (!phone) return statusMsg.innerText = "❌ Nomor kosong";
+
+      try {
+        const res = await fetch(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FILE_PATH}`);
+        const json = await res.json();
+
+        if (!json.data || !Array.isArray(json.data)) return statusMsg.innerText = "❌ Struktur data rusak";
+
+        if (json.data.includes(phone)) return statusMsg.innerText = "❌ Nomor sudah ada";
+
+        json.data.push(phone);
+        const updated = JSON.stringify(json, null, 2);
+        const base64 = btoa(unescape(encodeURIComponent(updated)));
+
+        const shaRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+          headers: { Authorization: `Bearer ${GITHUB_TOKEN}` }
+        });
+        const sha = (await shaRes.json()).sha;
+
+        const upload = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${GITHUB_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: `Tambah nomor ${phone}`,
+            content: base64,
+            sha: sha
+          })
+        });
+
+        if (upload.ok) {
+          statusMsg.innerText = "✅ Nomor berhasil ditambahkan";
+        } else {
+          const err = await upload.json();
+          statusMsg.innerText = "❌ Gagal: " + err.message;
+        }
+
+      } catch (e) {
+        statusMsg.innerText = "❌ Error: " + e.message;
+      }
+    }
+  </script>
+</body>
+</html>
